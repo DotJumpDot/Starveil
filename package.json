@@ -1,6 +1,6 @@
 {
   "name": "starveil",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "LocalStorage with expiration, namespace, and advanced features for web applications",
   "main": "dist/starveil.js",
   "types": "dist/starveil.d.ts",
@@ -13,10 +13,10 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "prepublishOnly": "npm run build && npm test"
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:coverage": "bun test --coverage",
+    "prepublishOnly": "bun run build && bun test"
   },
   "keywords": [
     "localstorage",

@@ -1,5 +1,5 @@
 import { StorageManager, onStorageChange } from './core/storage';
-import { parseTTL, calculateExpiration, isExpired } from './core/expiration';
+import { calculateExpiration, isExpired, parseSize } from './core/expiration';
 import {
   validateKey,
   validateTTL,
@@ -59,8 +59,6 @@ export default class Starveil<T = unknown> {
     const serializedValue = JSON.stringify(value);
     const size = new Blob([serializedValue]).size;
 
-    this.checkStorageSpace(size);
-
     const item: StarveilStorageItem<T> = {
       value,
       expiresAt,
@@ -69,11 +67,16 @@ export default class Starveil<T = unknown> {
       createdAt: Date.now()
     };
 
+    const itemSize = new Blob([JSON.stringify(item)]).size;
+
     try {
+      this.checkStorageSpace(itemSize);
       this.storage.set(key, item);
+      this.checkWarningThreshold();
       return true;
     } catch (error) {
       this.cleanupAndRetry(key, item);
+      this.checkWarningThreshold();
       return true;
     }
   }
@@ -158,6 +161,11 @@ export default class Starveil<T = unknown> {
     };
   }
 
+  setMaxSize(size: string | number): void {
+    this.options.maxSize = parseSize(size);
+    this.storage.setMaxSize(this.options.maxSize);
+  }
+
   on<K extends keyof StarveilEventMap>(
     event: K,
     callback: StarveilEventMap[K]
@@ -199,8 +207,11 @@ export default class Starveil<T = unknown> {
     const availableSpace = info.freeSpace;
 
     if (availableSpace >= itemSize) {
+      this.checkWarningThreshold();
       return;
     }
+
+    this.checkWarningThreshold();
 
     const requiredSpace = itemSize - availableSpace;
     const items = this.storage.getAllItems();
@@ -233,6 +244,7 @@ export default class Starveil<T = unknown> {
 
   private cleanupAndRetry(key: string, item: StarveilStorageItem<T>): void {
     this.storage.removeExpiredItems();
+    this.checkWarningThreshold();
 
     try {
       this.storage.set(key, item);
@@ -244,6 +256,7 @@ export default class Starveil<T = unknown> {
       try {
         this.storage.set(key, item);
       } catch {
+        this.checkWarningThreshold();
         this.emit('full');
         throw new Error('Unable to store item: storage is full');
       }

@@ -45,6 +45,10 @@ export class StorageManager {
 
   remove(key: string): void {
     const namespacedKey = this.getNamespacedKey(key);
+    const exists = localStorage.getItem(namespacedKey) !== null;
+    if (!exists) {
+      throw new Error(`Key "${key}" does not exist`);
+    }
     localStorage.removeItem(namespacedKey);
   }
 
@@ -112,12 +116,18 @@ export class StorageManager {
     return this.getAllKeys().length;
   }
 
+  setMaxSize(size: number): void {
+    this.maxSize = size;
+  }
+
   removeOldestItems(count: number): void {
     const items = this.getAllItems();
     const sortedItems = Array.from(items.entries()).sort((a, b) => a[1].createdAt - b[1].createdAt);
 
     for (let i = 0; i < Math.min(count, sortedItems.length); i++) {
-      this.remove(sortedItems[i][0]);
+      const [key] = sortedItems[i];
+      const namespacedKey = this.getNamespacedKey(key);
+      localStorage.removeItem(namespacedKey);
     }
   }
 
@@ -127,8 +137,12 @@ export class StorageManager {
 
     for (const [key, item] of items.entries()) {
       if (Date.now() >= item.expiresAt) {
-        this.remove(key);
-        expiredKeys.push(key);
+        try {
+          this.remove(key);
+          expiredKeys.push(key);
+        } catch {
+          continue;
+        }
       }
     }
 

@@ -70,3 +70,36 @@ export function formatTTL(ms: number): string {
   }
   return `${seconds}s`;
 }
+
+export function parseSize(size: string | number): number {
+  if (typeof size === 'number') {
+    if (isNaN(size) || size <= 0) {
+      throw new Error('Size must be a positive number');
+    }
+    return size;
+  }
+
+  if (typeof size !== 'string' || size.trim() === '') {
+    throw new Error('Size must be a non-empty string or number');
+  }
+
+  const sizePattern = /^(\d+(?:\.\d+)?)\s*(KB|MB|GB|TB|B)$/i;
+  const match = size.match(sizePattern);
+
+  if (!match) {
+    throw new Error(`Invalid size format: ${size}. Expected format like '10MB', '5GB', '1024B'`);
+  }
+
+  const value = parseFloat(match[1]);
+  const unit = match[2].toUpperCase();
+
+  const unitMultipliers = {
+    'B': 1,
+    'KB': 1024,
+    'MB': 1024 * 1024,
+    'GB': 1024 * 1024 * 1024,
+    'TB': 1024 * 1024 * 1024 * 1024
+  };
+
+  return value * unitMultipliers[unit as keyof typeof unitMultipliers];
+}

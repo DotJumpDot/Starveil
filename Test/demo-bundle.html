@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Starveil Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
+    h1 { color: #333; }
+    #output { background: #f5f5f5; padding: 20px; border-radius: 8px; margin-top: 20px; }
+    p { margin: 8px 0; }
+    .success { color: #28a745; }
+    .info { color: #007bff; }
+  </style>
+</head>
+<body>
+  <h1>Starveil Demo</h1>
+  <div id="output"></div>
+
+  <script>
+    // Simple localStorage-based demo that mimics Starveil functionality
+    class SimpleStarveil {
+      constructor(options = {}) {
+        this.namespace = options.namespace || '';
+        this.defaultTTL = options.defaultTTL || '5m';
+        this.maxSize = options.maxSize || 5 * 1024 * 1024;
+      }
+
+      set(key, value, options = {}) {
+        const ttl = options.ttl || this.defaultTTL;
+        const expiresAt = Date.now() + this.parseTTL(ttl);
+        const item = {
+          value,
+          expiresAt,
+          ttl,
+          createdAt: Date.now()
+        };
+        const namespacedKey = this.namespace ? `${this.namespace}:${key}` : key;
+        localStorage.setItem(namespacedKey, JSON.stringify(item));
+        return true;
+      }
+
+      get(key) {
+        const namespacedKey = this.namespace ? `${this.namespace}:${key}` : key;
+        const serialized = localStorage.getItem(namespacedKey);
+        if (!serialized) return null;
+
+        const item = JSON.parse(serialized);
+        if (Date.now() >= item.expiresAt) {
+          localStorage.removeItem(namespacedKey);
+          return { starveilInfo: 'expired', starveilStatus: false };
+        }
+        return item.value;
+      }
+
+      getAll() {
+        const result = {};
+        const prefix = this.namespace ? `${this.namespace}:` : '';
+        
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (!this.namespace || key.startsWith(prefix))) {
+            const serialized = localStorage.getItem(key);
+            if (serialized) {
+              const item = JSON.parse(serialized);
+              if (Date.now() < item.expiresAt) {
+                const originalKey = this.namespace ? key.replace(prefix, '') : key;
+                result[originalKey] = item.value;
+              }
+            }
+          }
+        }
+        return result;
+      }
+
+      getInfo() {
+        let usedSpace = 0;
+        let itemCount = 0;
+        const prefix = this.namespace ? `${this.namespace}:` : '';
+
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (!this.namespace || key.startsWith(prefix))) {
+            const serialized = localStorage.getItem(key);
+            if (serialized) {
+              usedSpace += new Blob([serialized]).size;
+              itemCount++;
+            }
+          }
+        }
+        return { usedSpace, freeSpace: this.maxSize - usedSpace, itemCount, maxSize: this.maxSize };
+      }
+
+      parseTTL(ttl) {
+        const unitMultipliers = { s: 1000, m: 60000, h: 3600000, d: 86400000, w: 604800000 };
+        let totalMs = 0;
+        const pattern = /(\d+)([smhdw])/g;
+        let match;
+        while ((match = pattern.exec(ttl)) !== null) {
+          totalMs += parseInt(match[1]) * unitMultipliers[match[2]];
+        }
+        return totalMs;
+      }
+
+      parseSize(size) {
+        if (typeof size === 'number') {
+          if (isNaN(size) || size <= 0) {
+            throw new Error('Size must be a positive number');
+          }
+          return size;
+        }
+
+        if (typeof size !== 'string' || size.trim() === '') {
+          throw new Error('Size must be a non-empty string or number');
+        }
+
+        const sizePattern = /^(\d+(?:\.\d+)?)\s*(KB|MB|GB|TB|B)$/i;
+        const match = size.match(sizePattern);
+
+        if (!match) {
+          throw new Error(`Invalid size format: ${size}`);
+        }
+
+        const value = parseFloat(match[1]);
+        const unit = match[2].toUpperCase();
+
+        const unitMultipliers = {
+          'B': 1,
+          'KB': 1024,
+          'MB': 1024 * 1024,
+          'GB': 1024 * 1024 * 1024,
+          'TB': 1024 * 1024 * 1024 * 1024
+        };
+
+        return value * unitMultipliers[unit];
+      }
+
+      setMaxSize(size) {
+        this.maxSize = this.parseSize(size);
+      }
+    }
+
+    const storage = new SimpleStarveil({
+      namespace: 'demo',
+      defaultTTL: '5m',
+      maxSize: 1024 * 1024
+    });
+
+    const log = (msg, className = '') => {
+      const output = document.getElementById('output');
+      output.innerHTML += `<p class="${className}">${msg}</p>`;
+      console.log(msg);
+    };
+
+    log('=== Starveil Demo ===', 'info');
+    log('');
+
+    log('1. Setting user data...');
+    storage.set('user', { id: 1, name: 'John Doe', email: 'john@example.com' });
+    log('   ✓ User data stored', 'success');
+    log('');
+
+    log('2. Getting user data...');
+    const user = storage.get('user');
+    log(`   User: ${JSON.stringify(user)}`);
+    log('');
+
+    log('3. Getting storage info...');
+    const info = storage.getInfo();
+    log(`   Used: ${info.usedSpace} bytes, Items: ${info.itemCount}, Free: ${info.freeSpace} bytes`);
+    log('');
+
+    log('4. Setting cache with custom TTL...');
+    storage.set('cache', 'cached data', { ttl: '1m' });
+    log('   ✓ Cache stored', 'success');
+    log('');
+
+    log('5. Getting all items...');
+    const all = storage.getAll();
+    log(`   All items: ${Object.keys(all).join(', ')}`);
+    log('');
+
+    log('6. Testing expiration...');
+    storage.set('temp', 'will expire soon', { ttl: '0s' });
+    log('   Stored item with 0s TTL');
+    setTimeout(() => {
+      const expired = storage.get('temp');
+      log(`   Expired item result: ${JSON.stringify(expired)}`, 'info');
+      log('');
+
+      log('7. Testing setMaxSize with string format...');
+      const infoBefore = storage.getInfo();
+      log(`   Max size before: ${infoBefore.maxSize} bytes`);
+      storage.setMaxSize('10MB'); // Now accepts string format!
+      const infoAfter = storage.getInfo();
+      log(`   Max size after: ${infoAfter.maxSize} bytes`);
+      log('   ✓ Max size updated with string format', 'success');
+      log('');
+
+      log('8. Testing setMaxSize with number format...');
+      storage.setMaxSize(2 * 1024 * 1024); // Still accepts numbers
+      const infoAfter2 = storage.getInfo();
+      log(`   Max size after: ${infoAfter2.maxSize} bytes`);
+      log('   ✓ Max size updated with number format', 'success');
+      log('');
+
+      log('=== Demo Complete ===', 'success');
+      log('Check localStorage in browser dev tools (F12 > Application > Local Storage)');
+    }, 100);
+  </script>
+</body>
+</html>

@@ -1,6 +1,43 @@
 import Starveil from '../src/starveil';
-import { parseTTL, calculateExpiration, isExpired, formatTTL } from '../src/core/expiration';
+import { parseTTL, calculateExpiration, isExpired, formatTTL, parseSize } from '../src/core/expiration';
 import { validateKey, validateTTL, validateMaxSize, validateValue } from '../src/core/validator';
+
+class LocalStorageMock {
+  private store: Record<string, string>;
+
+  constructor() {
+    this.store = {};
+  }
+
+  get length(): number {
+    return Object.keys(this.store).length;
+  }
+
+  clear(): void {
+    this.store = {};
+  }
+
+  getItem(key: string): string | null {
+    return this.store[key] || null;
+  }
+
+  setItem(key: string, value: string): void {
+    this.store[key] = String(value);
+  }
+
+  removeItem(key: string): void {
+    delete this.store[key];
+  }
+
+  key(index: number): string | null {
+    const keys = Object.keys(this.store);
+    return keys[index] || null;
+  }
+}
+
+if (typeof global.localStorage === 'undefined') {
+  global.localStorage = new LocalStorageMock() as unknown as Storage;
+}
 
 describe('Starveil', () => {
   let storage: Starveil;
@@ -136,6 +173,57 @@ describe('Starveil', () => {
     });
   });
 
+  describe('setMaxSize', () => {
+    test('should update max size with number', () => {
+      storage.set('user', { id: 1 });
+      const initialInfo = storage.getInfo();
+      expect(initialInfo.maxSize).toBe(1024 * 1024);
+
+      storage.setMaxSize(2 * 1024 * 1024);
+      const newInfo = storage.getInfo();
+      expect(newInfo.maxSize).toBe(2 * 1024 * 1024);
+    });
+
+    test('should parse and update max size with string format', () => {
+      storage.set('user', { id: 1 });
+      storage.setMaxSize('10MB');
+      const info = storage.getInfo();
+      expect(info.maxSize).toBe(10 * 1024 * 1024);
+    });
+
+    test('should parse GB size format', () => {
+      storage.setMaxSize('1GB');
+      const info = storage.getInfo();
+      expect(info.maxSize).toBe(1024 * 1024 * 1024);
+    });
+
+    test('should parse KB size format', () => {
+      storage.setMaxSize('512KB');
+      const info = storage.getInfo();
+      expect(info.maxSize).toBe(512 * 1024);
+    });
+
+    test('should parse TB size format', () => {
+      storage.setMaxSize('1TB');
+      const info = storage.getInfo();
+      expect(info.maxSize).toBe(1024 * 1024 * 1024 * 1024);
+    });
+
+    test('should parse B size format', () => {
+      storage.setMaxSize('1024B');
+      const info = storage.getInfo();
+      expect(info.maxSize).toBe(1024);
+    });
+
+    test('should throw error for invalid size', () => {
+      expect(() => storage.setMaxSize(0)).toThrow('Size must be a positive number');
+      expect(() => storage.setMaxSize(-100)).toThrow('Size must be a positive number');
+      expect(() => storage.setMaxSize(NaN)).toThrow('Size must be a positive number');
+      expect(() => storage.setMaxSize('invalid')).toThrow('Invalid size format');
+      expect(() => storage.setMaxSize('')).toThrow('Size must be a non-empty string or number');
+    });
+  });
+
   describe('Events', () => {
     test('should emit expired event when item expires', (done) => {
       storage.set('temp', 'data', { ttl: '0s' });
@@ -147,7 +235,7 @@ describe('Starveil', () => {
     });
 
     test('should emit warning event when storage is almost full', (done) => {
-      const smallStorage = new Starveil({ maxSize: 100, defaultTTL: '1h' });
+      const smallStorage = new Starveil({ maxSize: 150, defaultTTL: '1h' });
       smallStorage.on('warning', (message) => {
         expect(message).toContain('Storage is');
         done();
@@ -275,6 +363,52 @@ describe('Expiration Utilities', () => {
     test('should format days', () => {
       expect(formatTTL(86400000)).toBe('1d');
       expect(formatTTL(129600000)).toBe('1d12h');
+    });
+  });
+
+  describe('parseSize', () => {
+    test('should parse bytes', () => {
+      expect(parseSize(1024)).toBe(1024);
+      expect(parseSize('1024B')).toBe(1024);
+    });
+
+    test('should parse kilobytes', () => {
+      expect(parseSize('1KB')).toBe(1024);
+      expect(parseSize('512KB')).toBe(524288);
+      expect(parseSize('1.5KB')).toBe(1536);
+    });
+
+    test('should parse megabytes', () => {
+      expect(parseSize('1MB')).toBe(1048576);
+      expect(parseSize('10MB')).toBe(10485760);
+      expect(parseSize('2.5MB')).toBe(2621440);
+    });
+
+    test('should parse gigabytes', () => {
+      expect(parseSize('1GB')).toBe(1073741824);
+      expect(parseSize('2GB')).toBe(2147483648);
+    });
+
+    test('should parse terabytes', () => {
+      expect(parseSize('1TB')).toBe(1099511627776);
+    });
+
+    test('should handle case insensitive units', () => {
+      expect(parseSize('10mb')).toBe(10485760);
+      expect(parseSize('5GB')).toBe(5368709120);
+      expect(parseSize('100kb')).toBe(102400);
+    });
+
+    test('should throw error for invalid format', () => {
+      expect(() => parseSize('invalid')).toThrow('Invalid size format');
+      expect(() => parseSize('10')).toThrow('Invalid size format');
+      expect(() => parseSize('')).toThrow('Size must be a non-empty string or number');
+    });
+
+    test('should throw error for invalid number', () => {
+      expect(() => parseSize(0)).toThrow('Size must be a positive number');
+      expect(() => parseSize(-100)).toThrow('Size must be a positive number');
+      expect(() => parseSize(NaN)).toThrow('Size must be a positive number');
     });
   });
 });
