@@ -14,7 +14,8 @@ import type {
   StarveilExpiredResponse,
   StarveilGetResponse,
   StarveilStorageInfo,
-  StarveilEventMap
+  StarveilEventMap,
+  StarveilInternalOptions
 } from './core/types';
 
 const WARNING_THRESHOLD = 0.8;
@@ -24,13 +25,28 @@ export default class Starveil<T = unknown> {
   private options: StarveilInternalOptions;
   private eventHandlers: Map<keyof StarveilEventMap, Set<Function>>;
 
-  constructor(options: StarveilOptions = {}) {
+  constructor(optionsOrNamespace?: StarveilOptions | string) {
     validateStorageAccess();
 
+    let namespace: string | null = null;
+    let defaultTTL: string | null = null;
+    let maxSize = 5 * 1024 * 1024;
+
+    if (typeof optionsOrNamespace === 'string') {
+      namespace = optionsOrNamespace;
+    } else if (typeof optionsOrNamespace === 'object' && optionsOrNamespace !== null) {
+      const opts = optionsOrNamespace as StarveilOptions;
+      namespace = opts.name || opts.namespace || null;
+      defaultTTL = opts.expire || opts.defaultTTL || null;
+      maxSize = opts.maxSize || 5 * 1024 * 1024;
+    } else {
+      namespace = 'Starveil';
+    }
+
     this.options = {
-      namespace: options.namespace || null,
-      defaultTTL: options.defaultTTL || null,
-      maxSize: options.maxSize || 5 * 1024 * 1024
+      namespace,
+      defaultTTL,
+      maxSize
     };
 
     this.storage = new StorageManager(this.options);
@@ -49,13 +65,11 @@ export default class Starveil<T = unknown> {
     validateValue(value);
 
     const ttl = options.ttl || this.options.defaultTTL;
-    if (!ttl) {
-      throw new Error('TTL is required. Provide it in options or set defaultTTL in constructor.');
+    if (ttl) {
+      validateTTL(ttl);
     }
 
-    validateTTL(ttl);
-
-    const expiresAt = calculateExpiration(ttl);
+    const expiresAt = ttl ? calculateExpiration(ttl) : null;
     const serializedValue = JSON.stringify(value);
     const size = new Blob([serializedValue]).size;
 
@@ -90,7 +104,7 @@ export default class Starveil<T = unknown> {
       return null;
     }
 
-    if (isExpired(item.expiresAt)) {
+    if (item.expiresAt && isExpired(item.expiresAt)) {
       this.storage.remove(key);
       this.emit('expired', key, item.value);
 
@@ -132,7 +146,7 @@ export default class Starveil<T = unknown> {
     const result: Record<string, any> = {};
 
     for (const [key, item] of items.entries()) {
-      if (isExpired(item.expiresAt)) {
+      if (item.expiresAt && isExpired(item.expiresAt)) {
         this.storage.remove(key);
         this.emit('expired', key, item.value);
       } else {
@@ -308,10 +322,4 @@ export default class Starveil<T = unknown> {
       }
     });
   }
-}
-
-interface StarveilInternalOptions {
-  namespace: string | null;
-  defaultTTL: string | null;
-  maxSize: number;
 }

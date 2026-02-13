@@ -10,7 +10,7 @@
   [![Node.js](https://img.shields.io/badge/Node.js-18+-43853D.svg)](https://nodejs.org/)
   [![Zero Dependencies](https://img.shields.io/badge/Zero%20Dependencies-2ecc71.svg)](https://github.com/dotjumpdot/starveil)
 
-**Version 1.0.0 - Production Release** 🎉
+**Version 1.1.0 - Production Release** 🎉
 
   [View on npmjs.com](https://www.npmjs.com/package/starveil)
 
@@ -93,11 +93,24 @@ bun add starveil
 
 ## Quick Start
 
-### JavaScript
+### Usage Examples
 
 ```javascript
 import Starveil from 'starveil';
 
+// 1. Default settings (namespace='Starveil', no expiration)
+const storage = new Starveil();
+
+// 2. String argument (namespace='myapp', no expiration)
+const storage = new Starveil('myapp');
+
+// 3. Options with name and expire (new API)
+const storage = new Starveil({
+  name: 'myapp',
+  expire: '1h'
+});
+
+// 4. Backward compatible with namespace and defaultTTL
 const storage = new Starveil({
   namespace: 'myapp',
   defaultTTL: '1h'
@@ -119,8 +132,8 @@ interface User {
 }
 
 const storage = new Starveil<User>({
-  namespace: 'myapp',
-  defaultTTL: '1h'
+  name: 'myapp',
+  expire: '1h'
 });
 
 const user: User = storage.get('user');
@@ -134,16 +147,40 @@ console.log(user.name);
 ### Constructor
 
 ```typescript
-new Starveil<T = any>(options?: StarveilOptions<T>)
+new Starveil<T = any>(optionsOrNamespace?: StarveilOptions | string)
 ```
 
-#### Options
+**Constructor Options:**
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `namespace` | `string` | `null` | Prefix for all keys to avoid collisions |
-| `defaultTTL` | `string` | `null` | Default time-to-live for all items |
+| `namespace` | `string` | `null` | Prefix for all keys to avoid collisions (backward compatible) |
+| `name` | `string` | `null` | Alias for namespace (new API) |
+| `defaultTTL` | `string` | `null` | Default time-to-live for all items (backward compatible) |
+| `expire` | `string` | `null` | Alias for defaultTTL (new API) |
 | `maxSize` | `number` | `5242880` | Maximum storage size in bytes (5MB) |
+
+**Usage Examples:**
+
+```javascript
+// 1. Default: namespace='Starveil', no expiration
+const storage = new Starveil();
+
+// 2. String argument: namespace='myapp', no expiration
+const storage = new Starveil('myapp');
+
+// 3. New API with name and expire
+const storage = new Starveil({
+  name: 'myapp',
+  expire: '1h'
+});
+
+// 4. Backward compatible
+const storage = new Starveil({
+  namespace: 'myapp',
+  defaultTTL: '1h'
+});
+```
 
 ### Methods
 

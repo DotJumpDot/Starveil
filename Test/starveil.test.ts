@@ -65,6 +65,48 @@ describe('Starveil', () => {
       });
       expect(s).toBeInstanceOf(Starveil);
     });
+
+    test('should create instance with string namespace', () => {
+      const s = new Starveil('myapp');
+      expect(s).toBeInstanceOf(Starveil);
+      s.set('key', 'value');
+      expect(s.get('key')).toBe('value');
+    });
+
+    test('should create instance with name and expire options', () => {
+      const s = new Starveil({
+        name: 'myapp',
+        expire: '1h'
+      });
+      expect(s).toBeInstanceOf(Starveil);
+      s.set('key', 'value');
+      expect(s.get('key')).toBe('value');
+    });
+
+    test('should create instance with no arguments', () => {
+      const s = new Starveil();
+      expect(s).toBeInstanceOf(Starveil);
+      s.set('key', 'value');
+      expect(s.get('key')).toBe('value');
+    });
+
+    test('should create instance with namespace only', () => {
+      const s = new Starveil({
+        namespace: 'testapp'
+      });
+      expect(s).toBeInstanceOf(Starveil);
+      s.set('key', 'value');
+      expect(s.get('key')).toBe('value');
+    });
+
+    test('should create instance with name only', () => {
+      const s = new Starveil({
+        name: 'testapp'
+      });
+      expect(s).toBeInstanceOf(Starveil);
+      s.set('key', 'value');
+      expect(s.get('key')).toBe('value');
+    });
   });
 
   describe('set', () => {
@@ -221,6 +263,32 @@ describe('Starveil', () => {
       expect(() => storage.setMaxSize(NaN)).toThrow('Size must be a positive number');
       expect(() => storage.setMaxSize('invalid')).toThrow('Invalid size format');
       expect(() => storage.setMaxSize('')).toThrow('Size must be a non-empty string or number');
+    });
+
+    test('should work with no expiration (string namespace)', () => {
+      const s = new Starveil('myapp');
+      s.set('key', 'value');
+      const result = s.get('key');
+      expect(result).toBe('value');
+    });
+
+    test('should work with no expiration (no expire option)', () => {
+      const s = new Starveil({
+        name: 'myapp'
+      });
+      s.set('key', 'value');
+      const result = s.get('key');
+      expect(result).toBe('value');
+    });
+
+    test('should work with expire option', () => {
+      const s = new Starveil({
+        name: 'myapp',
+        expire: '1h'
+      });
+      s.set('key', 'value');
+      const result = s.get('key');
+      expect(result).toBe('value');
     });
   });
 

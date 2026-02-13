@@ -236,6 +236,7 @@ localstorage, storage, ttl, expiration, cache, web, browser, namespace, cross-ta
 
 ### Versioning
 Follow semantic versioning:
+- **1.1.0**: Enhanced constructor API with flexible initialization options
 - **1.0.0**: Complete stable release
 - **0.x.0**: Major features/new functions
 - **0.0.x**: Minor updates, docs, bug fixes

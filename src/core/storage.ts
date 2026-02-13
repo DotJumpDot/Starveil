@@ -136,7 +136,7 @@ export class StorageManager {
     const items = this.getAllItems();
 
     for (const [key, item] of items.entries()) {
-      if (Date.now() >= item.expiresAt) {
+      if (item.expiresAt !== null && Date.now() >= item.expiresAt) {
         try {
           this.remove(key);
           expiredKeys.push(key);

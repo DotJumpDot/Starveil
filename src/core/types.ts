@@ -1,6 +1,8 @@
 export interface StarveilOptions {
   namespace?: string;
+  name?: string;
   defaultTTL?: string;
+  expire?: string;
   maxSize?: number;
 }
 
@@ -14,16 +16,16 @@ export interface StarveilGetOptions {
 
 export interface StarveilStorageItem<T = unknown> {
   value: T;
-  expiresAt: number;
-  ttl: string;
+  expiresAt: number | null;
+  ttl: string | null;
   size: number;
   createdAt: number;
 }
 
 export interface StarveilMetadata {
   value: unknown;
-  expiresAt: number;
-  ttl: string;
+  expiresAt: number | null;
+  ttl: string | null;
   size: number;
 }
 
@@ -53,8 +55,8 @@ export interface StarveilEventMap {
 
 export interface StarveilStoredData<T = unknown> {
   value: T;
-  expiresAt: number;
-  ttl: string;
+  expiresAt: number | null;
+  ttl: string | null;
   createdAt: number;
 }
 

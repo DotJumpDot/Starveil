@@ -4,6 +4,50 @@ All notable changes to Starveil will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.0] - 2026-02-13
+
+### Added
+
+- **Enhanced Constructor API**: More flexible initialization options
+  - String argument support: `new Starveil('myapp')` for namespace without expiration
+  - New `name` option as alias for `namespace`
+  - New `expire` option as alias for `defaultTTL`
+  - Default namespace is now 'Starveil' when no arguments provided
+  - Default TTL is `null` (no expiration) when not specified
+
+### Changed
+
+- **Bug Fix**: Fixed TypeScript error where `item.expiresAt` could be null in `removeExpiredItems()` method
+- **Documentation**: Updated AGENTS.md to use `bun publish` instead of `npm publish`
+- **Tests**: Added comprehensive test coverage for new constructor variations
+
+### API Examples
+
+```javascript
+// Default: namespace='Starveil', no expiration
+const storage = new Starveil();
+
+// String argument: namespace='myapp', no expiration
+const storage = new Starveil('myapp');
+
+// New API with name and expire
+const storage = new Starveil({
+  name: 'myapp',
+  expire: '1h'
+});
+
+// Backward compatible with namespace and defaultTTL
+const storage = new Starveil({
+  namespace: 'myapp',
+  defaultTTL: '1h'
+});
+```
+
+### Documentation
+
+- Updated README.md Quick Start section with new constructor examples
+- Updated AGENTS.md to reflect Bun as the primary package manager
+
 ## [1.0.0] - 2026-02-13
 
 ### Added
