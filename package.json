@@ -1,0 +1,58 @@
+{
+  "name": "starveil",
+  "version": "0.1.0",
+  "description": "LocalStorage with expiration, namespace, and advanced features for web applications",
+  "main": "dist/starveil.js",
+  "types": "dist/starveil.d.ts",
+  "module": "dist/starveil.js",
+  "exports": {
+    ".": {
+      "types": "./dist/starveil.d.ts",
+      "default": "./dist/starveil.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "localstorage",
+    "storage",
+    "ttl",
+    "expiration",
+    "cache",
+    "web",
+    "browser",
+    "namespace",
+    "cross-tab",
+    "typescript"
+  ],
+  "author": "DotJumpDot",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dotjumpdot/starveil.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dotjumpdot/starveil/issues"
+  },
+  "homepage": "https://github.com/dotjumpdot/starveil#readme",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
