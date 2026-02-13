@@ -4,6 +4,34 @@ All notable changes to Starveil will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.1] - 2026-02-13
+
+### Documentation
+
+- **Enhanced README**: Completely restructured API Reference section
+  - Added quick-reference table for all methods
+  - Added basic usage examples for each method
+  - Added 2+ real-life examples per method showing practical applications
+  - Improved readability with clearer formatting and structure
+  - Simplified Table of Contents for easier navigation
+
+### Changed
+
+- **Table of Contents**: Removed self-referencing link and nested sections for cleaner structure
+- **Method Documentation**: Each method now includes practical use cases (session management, shopping carts, user logout, storage monitoring, etc.)
+
+### API Examples
+
+New documentation examples include:
+- Session token management with countdown timers
+- Shopping cart expiration and recovery
+- User logout flows with cleanup
+- Storage health monitoring and warnings
+- Data export functionality
+- Event-driven automatic cleanup
+- React component lifecycle management
+- Conditional monitoring with start/stop controls
+
 ## [1.1.0] - 2026-02-13
 
 ### Added
