@@ -279,13 +279,10 @@ export default class Starveil<T = unknown> {
 
   private setupCleanupInterval(): void {
     const interval = setInterval(() => {
-      const expiredKeys = this.storage.removeExpiredItems();
-      expiredKeys.forEach((key) => {
-        const item = this.storage.get(key);
-        if (item) {
-          this.emit('expired', key, item.value);
-        }
-      });
+      const expired = this.storage.removeExpiredItemsWithValues<T>();
+      for (const { key, item } of expired) {
+        this.emit('expired', key, item.value);
+      }
 
       this.checkWarningThreshold();
     }, 60000);

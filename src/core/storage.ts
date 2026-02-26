@@ -148,6 +148,24 @@ export class StorageManager {
 
     return expiredKeys;
   }
+
+  removeExpiredItemsWithValues<T = unknown>(): Array<{ key: string; item: StarveilStorageItem<T> }> {
+    const expired: Array<{ key: string; item: StarveilStorageItem<T> }> = [];
+    const items = this.getAllItems<T>();
+
+    for (const [key, item] of items.entries()) {
+      if (item.expiresAt !== null && Date.now() >= item.expiresAt) {
+        expired.push({ key, item });
+        try {
+          this.remove(key);
+        } catch {
+          continue;
+        }
+      }
+    }
+
+    return expired;
+  }
 }
 
 export function onStorageChange(callback: (key: string, value: string | null) => void): () => void {
